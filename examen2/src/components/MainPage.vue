@@ -2,47 +2,14 @@
   <div class="body-page">
     <div class="content-body">
       <div class="coffees">
-        <div class="american-coffee coffee">
+        <div v-for="(coffee, index) in coffees" :key="index" :class="coffee.class">
           <div class="img-container">
-            <img src="../assets/Cafe_Americano.png" alt="">
+            <img :src="coffee.image" alt="">
           </div>
-          <span>Café americano</span>
-          <span>₡950</span>
+          <span>{{ coffee.name }}</span>
+          <span>₡{{ coffee.price }}</span>
           <form action="">
-            <input type="number" name="" id="">
-          </form>
-          <button>Agregar al carrito</button>
-        </div>
-        <div class="capuchino coffee">
-          <div class="img-container">
-            <img src="../assets/Capuchino.png" alt="">
-          </div>
-          <span>Café americano</span>
-          <span>₡950</span>
-          <form action="">
-            <input type="number" name="" id="">
-          </form>
-          <button>Agregar al carrito</button>
-        </div>
-        <div class="late coffee">
-          <div class="img-container">
-            <img src="../assets/Late.png" alt="">
-          </div>
-          <span>Café americano</span>
-          <span>₡950</span>
-          <form action="">
-            <input type="number" name="" id="">
-          </form>
-          <button>Agregar al carrito</button>
-        </div>
-        <div class="american-coffee coffee">
-          <div class="img-container">
-            <img src="../assets/Mocachino.png" alt="">
-          </div>
-          <span>Café americano</span>
-          <span>₡950</span>
-          <form action="">
-            <input type="number" name="" id="">
+            <input type="number" name="" id="" :placeholder="coffee.quantity">
           </form>
           <button>Agregar al carrito</button>
         </div>
@@ -118,8 +85,30 @@
 </template>
 
 <script>
+
+  import axios from 'axios';
   export default {
-    name: 'MainPage'
+    name: 'MainPage',
+    data() {
+      return {
+        coffees: [
+          {name: "Café americano", quantity: 10, price: 950, class: "american-coffee coffee", image: require("../assets/Cafe_Americano.png")},
+          {name: "Café americano", quantity: 10, price: 950, class: "american-coffee coffee", image: require("../assets/Capuchino.png")},
+          {name: "Café americano", quantity: 10, price: 950, class: "american-coffee coffee", image: require("../assets/Late.png")},
+          {name: "Café americano", quantity: 10, price: 950, class: "american-coffee coffee", image: require("../assets/Mocachino.png")}
+        ],
+      }
+    },
+    methods: {
+      axiosTest() {
+        axios.get("https://localhost:7148/WeatherForecast").then((response) => {
+          console.log(response.data)
+        })
+      }
+    },
+    created() {
+      this.axiosTest()
+    }
   }
 </script>
 
@@ -165,7 +154,7 @@
 }
 
 .img-container {
-  height: 100px;
+  object-fit: contain;
 }
 
 .checkout {
