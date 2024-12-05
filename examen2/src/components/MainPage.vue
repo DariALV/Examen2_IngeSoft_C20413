@@ -1,4 +1,5 @@
 <template>
+  <v-app>
   <div class="body-page">
     <div class="content-body">
       <div class="coffees">
@@ -8,17 +9,23 @@
           </div>
           <div class="coffee-info">
             <span class="coffee-name">{{ coffee.name }}</span>
-            <span class="coffee-price">₡{{ coffee.price }}</span>
-            <form action="">
-              <input type="number" name="" id="" :placeholder="coffee.quantity">
-            </form>
-            <button>Agregar al carrito</button>
+            <span class="coffee-price">{{ formatMoney(coffee.price) }}</span>
+            <v-text-field
+              :label="'Cantidad de cafés: ' + coffee.quantity.toString()"
+              color="primary"
+              v-model="coffeeBeforeSelection[index]"
+              :rules="[validateCoffeeSelection(index)]"
+              variant="outlined"
+            ></v-text-field>
+            <button v-if="coffee.quantity == 0" class="disabled-btn">Agregar al carrito</button>
+            <button v-else-if="coffeeSelected[index] == 0" @click="setCoffeeSelection(index)" class="useful-btn">Agregar al carrito</button>
+            <button v-else-if="coffeeSelected[index] > 0" @click="setCoffeeSelection(index)" class="useful-btn">Modificar producto</button>
           </div>
         </div>
       </div>
       <div class="checkout">
         <p class="total-title">Total</p>
-        <p class="total-amount">₡13.500</p>
+        <p class="total-amount">{{ formatMoney(getTotalCoffeeValue()) }}</p>
         <hr>
         <p class="money-title">Dinero para realizar el pago</p>
         <div class="currencies">
@@ -26,20 +33,67 @@
             <div class="currency-img">
               <img :src="currency.image" alt="">
             </div>
-            <form action="">
-              <input type="number" name="" id="">
-            </form>
+            <v-text-field
+              label="Cantidad"
+              v-model="currency.quantity"
+              variant="outlined"
+              maxlength="2"
+              counter
+            ></v-text-field>
             <p class="currency-total">
-              ₡{{ currency.value * currency.quantity }}
+              {{ formatMoney(getIndividualCurrency(index)) }}
             </p>
           </div>
         </div>
         <hr>
-        <p class="currency-total-amount">Faltan ₡3.500</p>
-        <button>Realizar la compra</button>
+        <p v-if="!isCoffeeSelected" class="currency-required-amount">Por favor, seleccione un café</p>
+        <p v-else-if="getRequestedMoney() > 0" class="currency-required-amount">Faltan {{ formatMoney(getRequestedMoney()) }}</p>
+        <p v-else-if="formatMoney(getRequestedMoney()) == 'Inválido'" class="currency-required-amount">Una de las monedas o billetes ingresados es inválido.</p>
+        <p v-else class="currency-confirmation">Vuelto a regresar: {{ formatMoney(-getRequestedMoney()) }}</p>
+        <button v-if="this.getRequestedMoney() > 0 || !this.isCoffeeSelected" class="disabled-btn">Realizar la compra</button>
+        <button v-else @click="buyCoffee()" class="useful-btn">Realizar la compra</button>
       </div>
     </div>
   </div>
+  <v-container>
+      <v-dialog max-width="500" v-model="isBuyClicked">
+        <template v-slot:default="{ isActive }">
+          <v-card title="Desglose de vuelto" v-if="!errorWhenBuying">
+            <v-card-text>
+              <p>Su vuelto es de {{ formatMoney(requestedMoneyForChange) }}</p>
+              <p>Desglose:</p>
+              <div v-for="(currency, index) in usedChange" :key="index">
+                <p v-if="currency.quantity > 0">{{ getCurrencyChangeTotal(currency) }}</p>
+              </div>
+            </v-card-text>
+      
+            <v-card-actions>
+              <v-spacer></v-spacer>
+      
+              <v-btn
+                text="Cerrar"
+                @click="isActive.value = false"
+              ></v-btn>
+            </v-card-actions>
+          </v-card>
+          <v-card title="Error al comprar" v-else>
+            <v-card-text>
+              No hay suficientes monedas para regresar el cambio
+            </v-card-text>
+      
+            <v-card-actions>
+              <v-spacer></v-spacer>
+      
+              <v-btn
+                text="Cerrar"
+                @click="isActive.value = false"
+              ></v-btn>
+            </v-card-actions>
+          </v-card>
+        </template>
+      </v-dialog>
+    </v-container>
+  </v-app>
 </template>
 
 <script>
@@ -51,20 +105,37 @@
       return {
         coffees: [
           {name: "Café americano", quantity: 10, price: 950, class: "american-coffee coffee", image: require("../assets/Cafe_Americano.png")},
-          {name: "Capuchino", quantity: 10, price: 950, class: "american-coffee coffee", image: require("../assets/Capuchino.png")},
-          {name: "Late", quantity: 10, price: 950, class: "american-coffee coffee", image: require("../assets/Late.png")},
-          {name: "Mocachino", quantity: 10, price: 950, class: "american-coffee coffee", image: require("../assets/Mocachino.png")}
+          {name: "Capuchino", quantity: 8, price: 1200, class: "american-coffee coffee", image: require("../assets/Capuchino.png")},
+          {name: "Late", quantity: 10, price: 1350, class: "american-coffee coffee", image: require("../assets/Late.png")},
+          {name: "Mocachino", quantity: 15, price: 1500, class: "american-coffee coffee", image: require("../assets/Mocachino.png")}
         ],
+        coffeeSelected: [0, 0, 0, 0],
+        coffeeBeforeSelection: ['', '', '', ''],
         currencies: [
-          {value: 1000, quantity: 5, class: "currency thousand", image: require("../assets/Billete1000.png")},
-          {value: 500, quantity: 0, class: "currency five-hundred", image: require("../assets/Moneda500.png")},
-          {value: 100, quantity: 0, class: "currency hundred", image: require("../assets/Moneda100.png")},
-          {value: 50, quantity: 0, class: "currency fifty", image: require("../assets/Moneda50.png")},
-          {value: 25, quantity: 0, class: "currency twenty-five", image: require("../assets/Moneda25.png")},
+          {value: 1000, quantity: '', class: "currency thousand", image: require("../assets/Billete1000.png")},
+          {value: 500, quantity: '', class: "currency five-hundred", image: require("../assets/Moneda500.png")},
+          {value: 100, quantity: '', class: "currency hundred", image: require("../assets/Moneda100.png")},
+          {value: 50, quantity: '', class: "currency fifty", image: require("../assets/Moneda50.png")},
+          {value: 25, quantity: '', class: "currency twenty-five", image: require("../assets/Moneda25.png")},
         ],
         currencyChange: [
-          {value: 1000, quantity: 20}
-        ]
+          {value: 1000, quantity: 20, type: "billete"},
+          {value: 500, quantity: 20, type: "moneda"},
+          {value: 100, quantity: 20, type: "moneda"},
+          {value: 50, quantity: 20, type: "moneda"},
+          {value: 25, quantity: 20, type: "moneda"}
+        ],
+        usedChange: [
+          {value: 1000, quantity: 0, type: "billete"},
+          {value: 500, quantity: 0, type: "moneda"},
+          {value: 100, quantity: 0, type: "moneda"},
+          {value: 50, quantity: 0, type: "moneda"},
+          {value: 25, quantity: 0, type: "moneda"}
+        ],
+        isCoffeeSelected: false,
+        isBuyClicked: false,
+        errorWhenBuying: false,
+        requestedMoneyForChange: 0
       }
     },
     methods: {
@@ -72,10 +143,114 @@
         axios.get("https://localhost:7148/WeatherForecast").then((response) => {
           console.log(response.data)
         })
+      },
+      formatMoney(moneyString) {
+        if (typeof(moneyString) === "number") moneyString = moneyString.toString()
+        if (isNaN(Number(moneyString))) return "Inválido"
+        console.log(moneyString)
+        return "₡" + moneyString.replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1.");
+      },
+      validateCoffeeSelection(index) {
+        if (this.coffeeBeforeSelection[index] === '' || 
+           (this.coffeeSelected[index] != 0 && Number(this.coffeeBeforeSelection[index]) == 0)) return true
+        return Number(this.coffeeBeforeSelection[index]) <= this.coffees[index].quantity && Number(this.coffeeBeforeSelection[index]) > 0;
+      },
+      setCoffeeSelection(index) {
+        if (this.coffeeBeforeSelection[index] === '') return
+        if (this.coffeeSelected[index] != 0 && Number(this.coffeeBeforeSelection[index]) == 0) this.coffeeSelected[index] = 0
+        if (Number(this.coffeeBeforeSelection[index]) <= this.coffees[index].quantity && Number(this.coffeeBeforeSelection[index]) > 0) {
+          this.coffeeSelected[index] = Number(this.coffeeBeforeSelection[index]);
+          this.isCoffeeSelected = true
+        }
+      },
+      getTotalCoffeeValue() {
+        let totalValue = 0
+        for (let i = 0; i < this.coffees.length; i++) {
+          totalValue += this.coffeeSelected[i] * this.coffees[i].price
+        }
+        return totalValue
+      },
+      getIndividualCurrency(index) {
+        let individualValue = this.currencies[index].value * this.currencies[index].quantity
+        if (individualValue < 0) return "NaN"
+        return individualValue.toString()
+      },
+      getRequestedMoney() {
+        let totalValue = this.getTotalCoffeeValue()
+        for (let i = 0; i < this.currencies.length; i++) {
+          totalValue -= this.currencies[i].value * this.currencies[i].quantity
+        }
+        return totalValue
+      },
+      buyCoffee() {
+        this.errorWhenBuying = false
+        this.isBuyClicked = true
+        let requestedMoney = this.getRequestedMoney()
+        if (requestedMoney > 0 || !this.isCoffeeSelected) {
+          return
+        }
+        this.requestedMoneyForChange = -requestedMoney
+        if (this.canGiveChange()) {
+          this.giveChange()
+        } else {
+          this.errorWhenBuying = true
+          return
+        }
+        for (let i = 0; i < this.coffeeSelected.length; i++) {
+          this.coffees[i].quantity -= this.coffeeSelected[i]
+          this.coffeeSelected[i] = 0
+          this.coffeeBeforeSelection[i] = ''
+        }
+        for (let i = 0; i < this.currencies.length; i++) {
+          this.currencies[i].quantity = ''
+        }
+        this.isCoffeeSelected = false
+      },
+      canGiveChange() {
+        let newChange = []
+        let requestedMoney = this.requestedMoneyForChange
+        for (let i = 0; i < this.currencyChange.length; i++) {
+          newChange.push({value: this.currencyChange[i].value, quantity: this.currencyChange[i].quantity + Number(this.currencies[i].quantity)})
+        }
+        for (let i = 0; i < newChange.length; i++) {
+          while (newChange[i].quantity > 0 && requestedMoney >= newChange[i].value) {
+            requestedMoney -= newChange[i].value
+            newChange[i].quantity--
+            console.log({'reqMoney': requestedMoney, 'money': newChange[i].value, 'quantity': newChange[i].quantity})
+          }
+        }
+        return requestedMoney == 0
+      },
+      giveChange() {
+        let newChange = []
+        let requestedMoney = this.requestedMoneyForChange
+        for (let i = 0; i < this.currencyChange.length; i++) {
+          this.usedChange[i].quantity = 0
+          newChange.push({value: this.currencyChange[i].value, quantity: this.currencyChange[i].quantity + Number(this.currencies[i].quantity)})
+        }
+        for (let i = 0; i < newChange.length; i++) {
+          while (newChange[i].quantity > 0 && requestedMoney >= newChange[i].value) {
+            requestedMoney -= newChange[i].value
+            newChange[i].quantity--
+            this.usedChange[i].quantity++
+            console.log({'reqMoney': requestedMoney, 'money': newChange[i].value, 'quantity': newChange[i].quantity})
+          }
+        }
+
+        if (requestedMoney == 0) {
+          for (let i = 0; i < newChange.length; i++) {
+            this.currencyChange[i].quantity = newChange[i].quantity
+          }
+        }
+      },
+      getCurrencyChangeTotal(currency) {
+        if (currency.quantity == 1) {
+          return "    - 1 " + currency.type + " de " + this.formatMoney(currency.value)
+        }
+        return "    - " + currency.quantity.toString() + " " + currency.type + "s de " + this.formatMoney(currency.value)
       }
     },
     created() {
-      this.axiosTest()
     }
   }
 </script>
@@ -157,7 +332,7 @@
   align-self: start;
 }
 
-.coffee form {
+.coffee v-text-field {
   justify-self: start;
   align-self: end;
 }
@@ -176,7 +351,8 @@
   font-weight: 600;
   line-height: 130%; /* 26px */
   justify-self: end;
-  align-self: end;
+  align-self: start;
+  transition: 0.2s ease all;
 }
 
 .img-container img {
@@ -206,7 +382,7 @@
 .currency {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  width: 450px;
+  width: 500px;
 }
 
 .currency form {
@@ -240,14 +416,16 @@
 .currency-total {
   justify-self: start;
   margin-left: 20px;
-  align-self: center;
+  margin-top: 15px;
+  align-self: start;
 }
 
 .currency-img {
   width: 121px;
   display: flex;
-  align-items: center;
+  align-items: start;
   justify-content: center;
+  margin-bottom: 10px;
 }
 
 hr {
@@ -256,8 +434,17 @@ hr {
   width: 100%;
 }
 
-.currency-total-amount {
+.currency-required-amount {
   color: #ff0000;
+  text-align: right;
+  font-feature-settings: 'liga' off, 'clig' off;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 130%;
+}
+
+.currency-confirmation {
   text-align: right;
   font-feature-settings: 'liga' off, 'clig' off;
   font-size: 24px;
@@ -280,5 +467,17 @@ hr {
   font-weight: 600;
   line-height: 130%; /* 26px */
   justify-self: center;
+  transition: 0.2s ease all;
 }
+
+.useful-btn:hover {
+  background-color: #a15a1c;
+}
+
+.coffee .disabled-btn, .checkout .disabled-btn {
+  color: #9B9B9B;
+  background-color: #D9D9D9;
+  cursor: default;
+}
+
 </style>
