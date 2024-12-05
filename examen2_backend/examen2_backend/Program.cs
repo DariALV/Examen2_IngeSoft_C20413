@@ -1,3 +1,7 @@
+using examen2_backend.Application.Interfaces;
+using examen2_backend.Application.Managers;
+using examen2_backend.Infrastructure.Data;
+
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +15,11 @@ builder.Services.AddCors(options =>
             policy.AllowAnyHeader();
         });
 });
+
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddSingleton<ICoffeeRepository, CoffeeRepository>();
+builder.Services.AddScoped<IModifyCoffeeStock, ModifyCoffeeStock>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

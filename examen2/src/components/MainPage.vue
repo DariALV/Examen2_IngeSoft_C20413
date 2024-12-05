@@ -3,7 +3,7 @@
   <div class="body-page">
     <div class="content-body">
       <div class="coffees">
-        <div v-for="(coffee, index) in coffees" :key="index" :class="coffee.class">
+        <div v-for="(coffee, index) in coffees" :key="index" class="coffee">
           <div class="img-container">
             <img :src="coffee.image" alt="">
           </div>
@@ -104,10 +104,10 @@
     data() {
       return {
         coffees: [
-          {name: "Café americano", quantity: 10, price: 950, class: "american-coffee coffee", image: require("../assets/Cafe_Americano.png")},
-          {name: "Capuchino", quantity: 8, price: 1200, class: "american-coffee coffee", image: require("../assets/Capuchino.png")},
-          {name: "Late", quantity: 10, price: 1350, class: "american-coffee coffee", image: require("../assets/Late.png")},
-          {name: "Mocachino", quantity: 15, price: 1500, class: "american-coffee coffee", image: require("../assets/Mocachino.png")}
+          {name: "Americano", quantity: 10, price: 950, image: require("../assets/Cafe_Americano.png")},
+          {name: "Capuchino", quantity: 8, price: 1200, image: require("../assets/Capuchino.png")},
+          {name: "Late", quantity: 10, price: 1350, image: require("../assets/Late.png")},
+          {name: "Mocachino", quantity: 15, price: 1500, image: require("../assets/Mocachino.png")}
         ],
         coffeeSelected: [0, 0, 0, 0],
         coffeeBeforeSelection: ['', '', '', ''],
