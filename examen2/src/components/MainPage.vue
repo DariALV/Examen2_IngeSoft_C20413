@@ -34,6 +34,7 @@
             </div>
             <v-text-field
               label="Cantidad"
+              color="primary"
               v-model="currency.quantity"
               variant="outlined"
               maxlength="2"
