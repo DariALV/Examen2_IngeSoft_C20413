@@ -1,14 +1,15 @@
-﻿using examen2_backend.Domain;
+﻿using examen2_backend.Application.Interfaces;
+using examen2_backend.Domain;
 
 namespace examen2_backend.Infrastructure.Data
 {
-    public class ChangeRepository
+    public class ChangeRepository : IChangeRepository
     {
         public List<MoneyModel> changeMoney { get; private set; }
+        public List<MoneyModel> usedChangeMoney { get; private set; }
 
         public ChangeRepository()
         {
-            // Initialize with default values
             changeMoney = new List<MoneyModel>
             {
                 new MoneyModel { Money = 1000, Quantity = 10, Type = "billete" },
@@ -16,6 +17,15 @@ namespace examen2_backend.Infrastructure.Data
                 new MoneyModel { Money = 100, Quantity = 10, Type = "moneda" },
                 new MoneyModel { Money = 50, Quantity = 10, Type = "moneda" },
                 new MoneyModel { Money = 25, Quantity = 10, Type = "moneda" }
+            };
+
+            usedChangeMoney = new List<MoneyModel>
+            {
+                new MoneyModel { Money = 1000, Quantity = 0, Type = "billete" },
+                new MoneyModel { Money = 500, Quantity = 0, Type = "moneda" },
+                new MoneyModel { Money = 100, Quantity = 0, Type = "moneda" },
+                new MoneyModel { Money = 50, Quantity = 0, Type = "moneda" },
+                new MoneyModel { Money = 25, Quantity = 0, Type = "moneda" }
             };
         }
     }

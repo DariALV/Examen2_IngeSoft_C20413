@@ -26,7 +26,7 @@ namespace examen2_backend.API.Controllers
         }
 
         [HttpPost]
-        public IActionResult UpdateCoffeStock(List<int> coffeeStock)
+        public IActionResult UpdateCoffeStock([FromBody] List<int> coffeeStock)
         {
             bool result = _modifyCoffeeStock.updateStock(coffeeStock);
             return Ok(result);

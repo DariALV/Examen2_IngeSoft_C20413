@@ -1,11 +1,10 @@
 <template>
-  <v-app>
   <div class="body-page">
     <div class="content-body">
       <div class="coffees">
         <div v-for="(coffee, index) in coffees" :key="index" class="coffee">
           <div class="img-container">
-            <img :src="coffee.image" alt="">
+            <img :src="coffeeImages[index]" alt="">
           </div>
           <div class="coffee-info">
             <span class="coffee-name">{{ coffee.name }}</span>
@@ -93,7 +92,6 @@
         </template>
       </v-dialog>
     </v-container>
-  </v-app>
 </template>
 
 <script>
@@ -103,12 +101,11 @@
     name: 'MainPage',
     data() {
       return {
-        coffees: [
-          {name: "Americano", quantity: 10, price: 950, image: require("../assets/Cafe_Americano.png")},
-          {name: "Capuchino", quantity: 8, price: 1200, image: require("../assets/Capuchino.png")},
-          {name: "Late", quantity: 10, price: 1350, image: require("../assets/Late.png")},
-          {name: "Mocachino", quantity: 15, price: 1500, image: require("../assets/Mocachino.png")}
-        ],
+        coffees: [],
+        coffeeImages: [require("../assets/Cafe_Americano.png"), 
+                       require("../assets/Capuchino.png"), 
+                       require("../assets/Late.png"), 
+                       require("../assets/Mocachino.png")],
         coffeeSelected: [0, 0, 0, 0],
         coffeeBeforeSelection: ['', '', '', ''],
         currencies: [
@@ -118,13 +115,7 @@
           {value: 50, quantity: '', class: "currency fifty", image: require("../assets/Moneda50.png")},
           {value: 25, quantity: '', class: "currency twenty-five", image: require("../assets/Moneda25.png")},
         ],
-        currencyChange: [
-          {value: 1000, quantity: 20, type: "billete"},
-          {value: 500, quantity: 20, type: "moneda"},
-          {value: 100, quantity: 20, type: "moneda"},
-          {value: 50, quantity: 20, type: "moneda"},
-          {value: 25, quantity: 20, type: "moneda"}
-        ],
+        currencyChange: [],
         usedChange: [
           {value: 1000, quantity: 0, type: "billete"},
           {value: 500, quantity: 0, type: "moneda"},
@@ -139,9 +130,25 @@
       }
     },
     methods: {
-      axiosTest() {
-        axios.get("https://localhost:7148/WeatherForecast").then((response) => {
-          console.log(response.data)
+      getCoffees() {
+        axios.get("https://localhost:7148/api/Coffee").then((response) => {
+          for (let i = 0; i < response.data.length; i++) {
+            let coffeeName = response.data[i].name
+            let coffeeQuantity = response.data[i].stock
+            let coffeePrice = response.data[i].price
+            this.coffees.push({name: coffeeName, quantity: coffeeQuantity, price: coffeePrice})
+          }
+        })
+      },
+      getCurrencyChange() {
+        axios.get("https://localhost:7148/api/Change").then((response) => {
+          for (let i = 0; i < response.data.length; i++) {
+            console.log(response.data[i])
+            let value = response.data[i].money
+            let quantity = response.data[i].quantity
+            let type = response.data[i].type
+            this.currencyChange.push({value: value, quantity: quantity, type: type})
+          }
         })
       },
       formatMoney(moneyString) {
@@ -190,58 +197,47 @@
           return
         }
         this.requestedMoneyForChange = -requestedMoney
-        if (this.canGiveChange()) {
-          this.giveChange()
-        } else {
-          this.errorWhenBuying = true
-          return
-        }
-        for (let i = 0; i < this.coffeeSelected.length; i++) {
-          this.coffees[i].quantity -= this.coffeeSelected[i]
-          this.coffeeSelected[i] = 0
-          this.coffeeBeforeSelection[i] = ''
-        }
-        for (let i = 0; i < this.currencies.length; i++) {
-          this.currencies[i].quantity = ''
-        }
-        this.isCoffeeSelected = false
-      },
-      canGiveChange() {
-        let newChange = []
-        let requestedMoney = this.requestedMoneyForChange
-        for (let i = 0; i < this.currencyChange.length; i++) {
-          newChange.push({value: this.currencyChange[i].value, quantity: this.currencyChange[i].quantity + Number(this.currencies[i].quantity)})
-        }
-        for (let i = 0; i < newChange.length; i++) {
-          while (newChange[i].quantity > 0 && requestedMoney >= newChange[i].value) {
-            requestedMoney -= newChange[i].value
-            newChange[i].quantity--
-            console.log({'reqMoney': requestedMoney, 'money': newChange[i].value, 'quantity': newChange[i].quantity})
-          }
-        }
-        return requestedMoney == 0
-      },
-      giveChange() {
-        let newChange = []
-        let requestedMoney = this.requestedMoneyForChange
-        for (let i = 0; i < this.currencyChange.length; i++) {
-          this.usedChange[i].quantity = 0
-          newChange.push({value: this.currencyChange[i].value, quantity: this.currencyChange[i].quantity + Number(this.currencies[i].quantity)})
-        }
-        for (let i = 0; i < newChange.length; i++) {
-          while (newChange[i].quantity > 0 && requestedMoney >= newChange[i].value) {
-            requestedMoney -= newChange[i].value
-            newChange[i].quantity--
-            this.usedChange[i].quantity++
-            console.log({'reqMoney': requestedMoney, 'money': newChange[i].value, 'quantity': newChange[i].quantity})
-          }
-        }
 
-        if (requestedMoney == 0) {
-          for (let i = 0; i < newChange.length; i++) {
-            this.currencyChange[i].quantity = newChange[i].quantity
+        let updatedChange = this.currencies.map(currency => parseInt(currency.quantity) || 0);
+
+        axios.post("https://localhost:7148/api/Change", {
+          requestedMoney: this.requestedMoneyForChange,
+          updatedChange: updatedChange
+        }).then((response) => {
+          for (let i = 0; i < response.data.length; i++) {
+            console.log(response.data[i])
+            let value = response.data[i].money
+            let quantity = response.data[i].quantity
+            let type = response.data[i].type
+            this.usedChange.push({value: value, quantity: quantity, type: type})
           }
-        }
+
+          this.setNewCoffeeStock()
+          for (let i = 0; i < this.coffeeSelected.length; i++) {
+            this.coffeeSelected[i] = 0
+            this.coffeeBeforeSelection[i] = ''
+          }
+          for (let i = 0; i < this.currencies.length; i++) {
+            this.currencies[i].quantity = ''
+          }
+          this.isCoffeeSelected = false
+        }).catch((error) => {
+          console.log(error);
+          this.errorWhenBuying = true;
+        });
+      },
+      setNewCoffeeStock() {
+        axios.post("https://localhost:7148/api/Coffee", this.coffeeSelected)
+        .then((response) => {
+          console.log(response)
+          this.coffees = []
+          this.currencyChange = []
+          this.getCoffees()
+          this.getCurrencyChange()
+        }).catch((error) => {
+          console.log(error);
+          this.errorWhenBuying = true;
+        });
       },
       getCurrencyChangeTotal(currency) {
         if (currency.quantity == 1) {
@@ -251,6 +247,8 @@
       }
     },
     created() {
+      this.getCoffees()
+      this.getCurrencyChange()
     }
   }
 </script>
@@ -270,7 +268,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #F3F4F6;
   height: 100vh;
   width: 100vw;
 }
@@ -288,6 +285,8 @@
 .coffees {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .coffee {
@@ -296,7 +295,7 @@
   display: flex;
   flex-direction: row;
   width: 100%;
-  height: 23.5%;
+  height: 100%;
   border-radius: 14px;
   box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.25);
 }

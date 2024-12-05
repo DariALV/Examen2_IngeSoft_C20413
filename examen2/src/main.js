@@ -1,4 +1,3 @@
-// main.js o main.ts
 import { createApp } from 'vue';
 import App from './App.vue';
 
