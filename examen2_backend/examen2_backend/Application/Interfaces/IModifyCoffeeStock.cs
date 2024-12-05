@@ -2,6 +2,6 @@
 {
     public interface IModifyCoffeeStock
     {
-        public bool updateStock(List<int> stocks);
+        public bool UpdateStock(List<int> stocks);
     }
 }

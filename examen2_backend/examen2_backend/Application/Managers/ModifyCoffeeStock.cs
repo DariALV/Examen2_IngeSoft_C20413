@@ -11,7 +11,7 @@ namespace examen2_backend.Application.Managers
         {
             _coffeeRepository = coffeeRepository;
         }
-        public bool updateStock(List<int> stocks) 
+        public bool UpdateStock(List<int> stocks) 
         {
             for (int i = 0; i < stocks.Count; i++)
             {

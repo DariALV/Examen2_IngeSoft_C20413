@@ -12,10 +12,10 @@ namespace examen2_backend.Infrastructure.Data
             // Initialize with default values
             Coffees = new List<CoffeeModel>
             {
-                new CoffeeModel { Name = "Americano", Stock = 100, Price = 950, ImageURL = "../assets/Cafe_Americano.png" },
-                new CoffeeModel { Name = "Capuchino", Stock = 100, Price = 950, ImageURL = "../assets/Capuchino.png" },
-                new CoffeeModel { Name = "Late", Stock = 100, Price = 950, ImageURL = "../assets/Late.png" },
-                new CoffeeModel { Name = "Mocachino", Stock = 100, Price = 950, ImageURL = "../assets/Mocachino.png" }
+                new CoffeeModel { Name = "Americano", Stock = 10, Price = 950},
+                new CoffeeModel { Name = "Capuchino", Stock = 8, Price = 1200},
+                new CoffeeModel { Name = "Late", Stock = 10, Price = 1350},
+                new CoffeeModel { Name = "Mocachino", Stock = 15, Price = 1500}
             };
         }
     }
